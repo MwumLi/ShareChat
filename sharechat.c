@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "getCurtime.h"
+/*use panel*/
 
 #define KEY_ESC		27
 #define KEY_SURE	10
