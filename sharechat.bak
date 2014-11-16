@@ -1,0 +1,148 @@
+#include <ncurses.h>
+#include <form.h>
+#include <unistd.h>
+#include <string.h>
+#include "getCurtime.h"
+
+int file_w;		//file area width
+int member_w;	//chat member area width
+int win_h;		//all window height
+int version_h;
+int status_h;
+
+char username[128];
+
+typedef struct winStruct{
+	int height;
+	int width;
+	int y, x;
+}winStruct;
+
+typedef struct barStruct {
+	WINDOW *win;
+	FORM *form;
+	FIELD **field;
+}barStruct;
+
+// some function for bar 
+barStruct *create_version_bar(winStruct win_struct, chtype color);
+void set_bar_text(barStruct *bar, char *str);
+void free_bar(barStruct *bar);
+
+void init_win(WINDOW *win, int win_w, int win_h)
+{
+	wborder(win, '|', '|', ' ', ' ', 
+			 '|', '|', '|', '|');	
+}
+
+int main(int argc, const char *argv[])
+{
+
+	WINDOW *file_win, *member_win;
+	WINDOW *chat_win;
+	WINDOW *bottom_win;
+	int i,j;
+	int chat_w;
+
+	//get username
+	strcpy(username, getlogin());
+
+	
+	initscr();
+	cbreak();
+	noecho();
+	start_color();
+	keypad(stdscr, TRUE);
+
+	//some settings for windows
+	file_w = 20;
+	member_w = 10;
+	chat_w = COLS - file_w - member_w;
+	win_h = LINES - 3;
+
+	mvprintw(LINES-1, 0, "Press any key to exit");
+	refresh();
+
+	init_pair(1, COLOR_BLACK, COLOR_BLUE);
+
+	winStruct bar_struct={1, COLS, 0, 0};
+	barStruct *version_bar=create_version_bar(bar_struct, COLOR_PAIR(1));
+	set_bar_text(version_bar, "version bar");
+
+	bar_struct.y = LINES-2;
+	barStruct *status_bar=create_version_bar(bar_struct, COLOR_PAIR(1));
+	set_bar_text(status_bar, "status bar");
+	wrefresh(status_bar->win);
+
+	file_win = newwin(win_h, file_w, 1, 0);
+	chat_win = newwin(win_h, chat_w, 1, file_w);
+	member_win = newwin(win_h, member_w, 1, file_w+chat_w);
+	init_win(file_win, file_w, win_h);
+	init_win(chat_win, chat_w, win_h);
+	init_win(member_win, member_w, win_h);
+	wrefresh(file_win);
+	wrefresh(chat_win);
+	wrefresh(member_win);
+	refresh();
+
+	getch();
+//	free_bar(version_bar);
+//	free_bar(status_bar);
+	endwin();
+	return 0;
+}
+
+barStruct *create_version_bar(winStruct win_struct, chtype color)
+{
+	WINDOW *win;
+	FORM *form;
+	FIELD **field;
+	barStruct *bar;
+
+	
+	
+	bar = (barStruct *)malloc(sizeof(barStruct));
+
+	win = newwin(win_struct.height, win_struct.width, 
+				 win_struct.y, win_struct.x);
+	field =(FIELD **)malloc(sizeof(FIELD *));
+	field[0] = new_field(win_struct.height, win_struct.width, 
+				 win_struct.y, win_struct.x, 0, 0);
+
+	//set background color
+	set_field_fore(field[0], color);
+	set_field_back(field[0], color);
+	//set lablestyle
+	field_opts_off(field[0], O_ACTIVE);
+	bar->field = field;	//add into bar
+
+
+	form = new_form(field);
+	bar->form = form; //add into bar
+
+//	set_current_field(form, field[0]);
+
+	set_form_win(form, win);
+	set_form_sub(form, derwin(win, 1, COLS, 0, 0));
+	
+	bar->win = win;	//add into bar
+
+	post_form(form);// post form
+	wrefresh(win); //refresh win
+	return bar;
+}
+void set_bar_text(barStruct *bar, char *str)
+{
+	FIELD **field=bar->field;
+	set_field_buffer(field[0], 0, str);
+	wrefresh(bar->win);
+}
+void free_bar(barStruct *bar)
+{
+	unpost_form(bar->form);
+	free_form(bar->form);
+	free_field(bar->field[0]);
+	delwin(bar->win);
+	free(bar);
+}
+
