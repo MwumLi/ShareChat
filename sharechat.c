@@ -156,6 +156,7 @@ int main(int argc, const char *argv[])
 	i = 0;
 	int len, up;
 	char print[200];
+	int r_pos;
 	while(1) {
 		ch = wgetch(share_wins[5]);
 		switch (ch) {
@@ -245,6 +246,21 @@ int main(int argc, const char *argv[])
 				wmove(share_wins[5], 0, 0);
 				wclrtoeol(share_wins[5]);
 				wmove(share_wins[5], 0, 0);
+				break;
+			case KEY_LEFT:
+				getyx(share_wins[5],y, x);
+				if(x <= 0)
+				  break;
+				wmove(share_wins[5],0, --x);
+				wrefresh(share_wins[5]);
+				break;
+			case KEY_RIGHT:
+				  
+				getyx(share_wins[5],y, x);
+				if(x >= i)
+				  break;
+				wmove(share_wins[5],0, ++x);
+				wrefresh(share_wins[5]);
 				break;
 			default:
 				send_msg.msg[i++] = ch;
