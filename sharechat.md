@@ -17,7 +17,7 @@
 
 ### 发送者
 
-	#define BUF_SIZE	1024
+	#define BUF_SIZE	512
 	#define ROOM_NAME_SIZE	128
 	#define SERVER_PORT 8888
 	
