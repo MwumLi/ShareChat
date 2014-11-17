@@ -220,7 +220,8 @@ int main(int argc, const char *argv[])
 				if(len != 0)
 				  up = 1;
 				if(y+up >= win_h) {
-					y -=(y+up-win_h);
+					up = y+up-win_h;
+					y -= up;
 					x = 0;
 					for(j=0; j<up; j++) {
 						scroll(share_wins[2]);
@@ -413,37 +414,47 @@ int exit_room(void)
 void *pthread_recv(void *arg)
 {
 	int y, x;
+	char print[200];
 	sendMsg  msg;
+	int len, up;
+	int i;
 	while(p_run) {
 		memset(&recv_msg, 0, sizeof(sendMsg));
+		memset(print, 0, 200);
+		len = up =0;
+
 		recvfrom(client_socket, &recv_msg, sizeof(sendMsg), 0, NULL, NULL);
-		getyx(share_wins[3], y, x);
-		print_curtime(share_wins[2], y, 2);
+
 		switch (recv_msg.msg_type) {
 			case CONN_SUCCESS:
 				connected = 1;			
 
-				wprintw(share_wins[3], "Welcome you to share chat!\n");
-				wrefresh(share_wins[3]);
+				sprintf(print, "Welcome you to share chat!\n");
+
 				break;
 			case JOIN_SUCCESS:
 				joined = 1;
 				chat_interface();
-				//update member infotmation
+				//update member window
+				sprintf(print, "You join room %s\n",recv_msg.room);
 				break;
 			case EXIT:
 				//update member window
-				wprintw(share_wins[3], "%s exit room %s\n", recv_msg.msg, recv_msg.room);
-				wrefresh(share_wins[3]);
+				sprintf(print, "%s exit room %s\n", recv_msg.msg, recv_msg.room);
 				break;
 			case JOIN:
 				//update member window
-				wprintw(share_wins[3], "%s join room %s\n", recv_msg.msg, recv_msg.room);
-				wrefresh(share_wins[3]);
+				sprintf(print, "%s join room %s\n", recv_msg.msg, recv_msg.room);
 				break;			
 			case MSG_MSG:
-				wprintw(share_wins[3], "%s say:\n", recv_msg.member);
-				wprintw(share_wins[3], "%s\n", recv_msg.msg);
+				sprintf(print, "%s say:\n", recv_msg.member);
+				len = strlen(print);
+				up = len/chat_w;
+				if(len%chat_w) 
+				  up +=1;
+
+				strcat(print, recv_msg.msg);
+				len = strlen(print);
 				//update time area 
 				break;
 			case MSG_FILE:				
@@ -451,6 +462,33 @@ void *pthread_recv(void *arg)
 			default:
 				;
 		}
+
+		up += len/chat_w;
+		if(len%chat_w) 
+		  up +=1;
+
+		getyx(share_wins[3], y, x);
+
+		if((y+up) >= win_h) {
+			up = (y+up-win_h);
+			y = y - up;
+			x = 0;
+			wmove(share_wins[3], y, x);
+			wmove(share_wins[2], y, x);
+			for(i=0; i<up; i++) {
+				scroll(share_wins[2]);
+				scroll(share_wins[3]);
+
+				touchwin(share_wins[2]);
+				touchwin(share_wins[3]);
+
+			}
+		}
+		print_curtime(share_wins[2], y, 2);
+		wprintw(share_wins[3], print);
+
+		wrefresh(share_wins[2]);
+		wrefresh(share_wins[3]);
 	}
 
 }
