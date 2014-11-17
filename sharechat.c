@@ -161,6 +161,9 @@ int main(int argc, const char *argv[])
 				
 				break;
 			case KEY_SURE:
+				//print time
+				getyx(share_wins[3], y, x);
+				print_curtime(share_wins[2], y, 2);
 
 				if(send_msg.msg[0] == '/') {
 					int ret = judge_command(send_msg.msg);
@@ -196,10 +199,10 @@ int main(int argc, const char *argv[])
 					send_msg.msg_type = MSG_MSG;
 					strcpy(send_msg.msg, username);
 					strcpy(send_msg.msg, room);
+					sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
 				}
 				//print
 				wprintw(share_wins[3], "%s", send_msg.msg);	
-				sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
 				
 				//refresh windows
 				wrefresh(share_wins[3]);
@@ -368,13 +371,17 @@ int exit_room(void)
 }
 void *pthread_recv(void *arg)
 {
+	int y, x;
 	sendMsg  msg;
 	while(p_run) {
 		memset(&recv_msg, 0, sizeof(sendMsg));
 		recvfrom(client_socket, &recv_msg, sizeof(sendMsg), 0, NULL, NULL);
+		getyx(share_wins[3], y, x);
+		print_curtime(share_wins[2], y, 2);
 		switch (recv_msg.msg_type) {
 			case CONN_SUCCESS:
 				connected = 1;			
+
 				wprintw(share_wins[3], "Welcome you to share chat!\n");
 				wrefresh(share_wins[3]);
 				break;
