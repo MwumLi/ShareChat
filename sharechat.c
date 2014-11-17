@@ -154,6 +154,8 @@ int main(int argc, const char *argv[])
 
 	pthread_create(&ptid, NULL, pthread_recv, NULL);
 	i = 0;
+	int len, up;
+	char print[200];
 	while(1) {
 		ch = wgetch(share_wins[5]);
 		switch (ch) {
@@ -163,8 +165,9 @@ int main(int argc, const char *argv[])
 			case KEY_SURE:
 				//print time
 				getyx(share_wins[3], y, x);
+				memset(print, 0, 200);
 				print_curtime(share_wins[2], y, 2);
-
+				
 				if(send_msg.msg[0] == '/') {
 					int ret = judge_command(send_msg.msg);
 					if(ret < COMMAND_NUM) {
@@ -173,12 +176,13 @@ int main(int argc, const char *argv[])
 							case 0:
 								connect_server(send_msg.msg);
 								sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
-								strcpy(send_msg.msg, "Try to connect server...\n");
+								strcpy(print, "Try to connect server...\n");
 								break;
 							case 1:
 								join_room(send_msg.msg);
 								sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
-								strcpy(send_msg.msg, "Try to join room...\n");
+								strcpy(print, "Try to join room...\n");
+
 								break;
 							case 2:
 								exit_room();
@@ -189,21 +193,47 @@ int main(int argc, const char *argv[])
 								break;
 						}
 					} else {
-						strcpy(send_msg.msg, "Enter error:cann't find command...\n");
+						strcpy(print, "Enter error:cann't find command...\n");
 					} //end ret <= COMMAND_NUM 
 				} // end send_msg.msg[0]  == '/'
 				else {	  
 					//general message
 					send_msg.msg[i++]='\n';
 					send_msg.msg[i++]='\0';
-					send_msg.msg_type = MSG_MSG;
-					strcpy(send_msg.msg, username);
-					strcpy(send_msg.msg, room);
+					send_msg.msg_type = MSG_MSG;	//type
+					strcpy(send_msg.member, username); //user
+					strcpy(send_msg.room, room); //room
 					sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
+					
+					
+					strcpy(print, username );
+					strcat(print, " say:\n");
+					strcat(print, send_msg.msg);
+					len = strlen(send_msg.msg);
+					up = len/chat_w;
+					if(len%chat_w) 
+					  up +=1;
+					up+=1;
+					len = 0;
 				}
+
+				if(len != 0)
+				  up = 1;
+				if(y+up >= win_h) {
+					y -=(y+up-win_h);
+					x = 0;
+					for(j=0; j<up; j++) {
+						scroll(share_wins[2]);
+						scroll(share_wins[3]);
+
+						touchwin(share_wins[2]);
+						touchwin(share_wins[3]);
+					}
+					wmove(share_wins[3], y, x);
+				}
+
 				//print
-				wprintw(share_wins[3], "%s", send_msg.msg);	
-				
+				wprintw(share_wins[3], "%s", print);	
 				//refresh windows
 				wrefresh(share_wins[3]);
 				
@@ -311,6 +341,12 @@ void conn_interface()
 	update_panels();
 	doupdate();
 
+	//Enable scrlll
+	scrollok(share_wins[2], 1);
+	scrollok(share_wins[3], 1);
+	scrollok(share_wins[4], 1);
+
+
 }
 void chat_interface()
 {
@@ -329,6 +365,11 @@ void chat_interface()
 	doupdate();
 
 	refresh();
+	//Enable scrlll
+	scrollok(share_wins[2], 1);
+	scrollok(share_wins[3], 1);
+	scrollok(share_wins[4], 1);
+
 }
 int	judge_command(char *str)
 {
