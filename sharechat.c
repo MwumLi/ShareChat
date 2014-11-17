@@ -193,14 +193,18 @@ int main(int argc, const char *argv[])
 					//general message
 					send_msg.msg[i++]='\n';
 					send_msg.msg[i++]='\0';
+					send_msg.msg_type = MSG_MSG;
+					strcpy(send_msg.msg, username);
+					strcpy(send_msg.msg, room);
 				}
 				//print
 				wprintw(share_wins[3], "%s", send_msg.msg);	
-
+				sendto(client_socket, &send_msg, sizeof(send_msg), 0, (struct sockaddr *)&server_info, sizeof(struct sockaddr_in));
+				
 				//refresh windows
 				wrefresh(share_wins[3]);
 				
-
+				
 				//init after print and send
 				i = 0;
 				memset(&send_msg, 0, sizeof(send_msg));
